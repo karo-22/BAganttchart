@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { 
   Clock, BarChart3, Settings2, Edit3, GripHorizontal, Plus, Trash2, 
-  Upload, Database, X, HelpCircle, Layers, Move, List, 
-  Copy, Check, PenLine, Save, FileText, ZoomIn, ZoomOut
+  Upload, Database, X, List, Copy, Check, Save, FileText, ZoomIn, ZoomOut
 } from 'lucide-react';
 
 // --- 定数定義 ---
@@ -13,7 +12,7 @@ const STORAGE_KEY = 'time-gantt-data-v1'; // LocalStorageのキー
 const UNIQUE_FACTOR = 1.19; // 固有時間の倍率係数
 
 const TIME_OPTIONS = [
-  { label: '3分00秒', value: 180 },
+  { label: '3分30秒', value: 210 },
   { label: '4分00秒', value: 240 },
   { label: '4分30秒', value: 270 },
 ];
@@ -96,9 +95,7 @@ const generateNSBars = (nsConfig, totalTime) => {
 
   const safeGap = Math.max(gap, 0.1); 
   const safeDuration = Math.max(duration, 0.001);
-  const maxTimeLimit = totalTime * 2;
-  // 安全のための上限設定
-  const maxBars = 1000; 
+  const maxBars = 1000; // 安全のための上限設定
 
   let index = 0;
 
@@ -731,13 +728,13 @@ const TaskControlPanel = React.memo(({
 // --- Main Component ---
 
 export default function App() {
-  const [totalDuration, setTotalDuration] = useState(180);
+  const [totalDuration, setTotalDuration] = useState(210);
   const [chartTitle, setChartTitle] = useState('チャート1');
   const [tasks, setTasks] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0); // ズームレベル管理
   
-  // チャート領域の高さを管理するState	const currentZoom = useMemo(() => ZOOM_LEVELS[zoomIndex], [zoomIndex]);
+  // チャート領域の高さを管理するState
   const [chartHeightPercent, setChartHeightPercent] = useState(50);	
   const [isResizing, setIsResizing] = useState(false);	
   const containerRef = useRef(null);	
@@ -745,12 +742,11 @@ export default function App() {
   const [isPanning, setIsPanning] = useState(false);	
   const [panStart, setPanStart] = useState({ x: 0, scrollLeft: 0 });
   const chartRef = useRef(null);	
-  const headerRef = useRef(null);	
   const [dragState, setDragState] = useState(null);	
   const currentZoom = useMemo(() => ZOOM_LEVELS[zoomIndex], [zoomIndex]);	
   const overlaps = useMemo(() => calculateExOverlaps(tasks, totalDuration), [tasks, totalDuration]);
 
-  // 初期データ (不要な mode, shifts を削除)
+  // 初期データ
   const initialTasks = useMemo(() => [
     { 
       id: 1, 
@@ -765,7 +761,7 @@ export default function App() {
       name: 'Striker2', 
       color: 'bg-green-500', 
       checkOverlap: true,
-      ex: [{ id: 'ex-2', start: 15, castTime: 0, duration: 45 }],
+      ex: [{ id: 'ex-2', start: 30, castTime: 0, duration: 45 }],
       ns: { start: MIN_ELAPSED_TIME, castTime: 0, gap: 30, duration: 10, isUnique2: false } 
     },
     { 
@@ -773,7 +769,7 @@ export default function App() {
       name: 'Striker3', 
       color: 'bg-teal-500', 
       checkOverlap: true,
-      ex: [{ id: 'ex-3', start: 30, castTime: 0, duration: 45 }],
+      ex: [{ id: 'ex-3', start: 75, castTime: 0, duration: 45 }],
       ns: { start: MIN_ELAPSED_TIME, castTime: 0, gap: 30, duration: 10, isUnique2: false } 
     },
     { 
@@ -781,7 +777,7 @@ export default function App() {
       name: 'Striker4', 
       color: 'bg-indigo-500', 
       checkOverlap: true,
-      ex: [{ id: 'ex-4', start: 60, castTime: 0, duration: 45 }],
+      ex: [{ id: 'ex-4', start: 120, castTime: 0, duration: 45 }],
       ns: { start: MIN_ELAPSED_TIME, castTime: 0, gap: 30, duration: 10, isUnique2: false } 
     },
     { 
@@ -789,7 +785,7 @@ export default function App() {
       name: 'Special1', 
       color: 'bg-purple-500', 
       checkOverlap: true,
-      ex: [{ id: 'ex-5', start: 90, castTime: 0, duration: 30 }],
+      ex: [{ id: 'ex-5', start: 165, castTime: 0, duration: 30 }],
       ns: { start: MIN_ELAPSED_TIME, castTime: 0, gap: 30, duration: 10, isUnique2: false } 
     },
     { 
@@ -797,7 +793,7 @@ export default function App() {
       name: 'Special2', 
       color: 'bg-rose-500', 
       checkOverlap: true,
-      ex: [{ id: 'ex-6', start: 120, castTime: 0, duration: 13 }],
+      ex: [{ id: 'ex-6', start: 195, castTime: 0, duration: 13 }],
       ns: { start: MIN_ELAPSED_TIME, castTime: 0, gap: 30, duration: 10, isUnique2: false } 
     },
   ], []);
@@ -831,6 +827,8 @@ export default function App() {
     if (e.button !== 0) return; // 左クリックのみ
     if (dragState) return; // バーのドラッグ中は無視
 
+    // ヘッダー部分( sticky )をクリックした場合はパン操作しないようにする判定も可能だが、
+    // ここでは簡易的に chartRef 全体を対象とする
     if (chartRef.current) {
         setIsPanning(true);
         setPanStart({
@@ -869,7 +867,7 @@ export default function App() {
         const savedData = window.localStorage.getItem(STORAGE_KEY);
         if (savedData) {
           const parsed = JSON.parse(savedData);
-          setTotalDuration(parsed.totalDuration || 180);
+          setTotalDuration(parsed.totalDuration || 210);
           setChartTitle(parsed.chartTitle || 'チャート1');
           if (parsed.tasks && parsed.tasks.length > 0) {
             setTasks(parsed.tasks);
@@ -1099,8 +1097,9 @@ export default function App() {
         const scrollContainer = chartRef.current;
         const visibleWidth = scrollContainer.getBoundingClientRect().width;
         // スクロールコンテナ内の実際のコンテンツ幅を取得
-        const innerDiv = scrollContainer.firstElementChild;
-        const actualWidth = innerDiv ? innerDiv.getBoundingClientRect().width : visibleWidth;
+        // ヘッダーがあるため、chartRefの直下ではなく、その中のラッパーの幅を見る
+        const contentWrapper = scrollContainer.firstElementChild;
+        const actualWidth = contentWrapper ? contentWrapper.getBoundingClientRect().width : visibleWidth;
 
         const deltaX = e.clientX - dragState.startX;
         const deltaSeconds = (deltaX / actualWidth) * totalDuration;
@@ -1172,13 +1171,6 @@ export default function App() {
         }
     };
   }, [dragState, onMouseMove, onMouseUp]);
-
-  // スクロール同期
-  const handleScroll = () => {
-    if (chartRef.current && headerRef.current) {
-      headerRef.current.scrollLeft = chartRef.current.scrollLeft;
-    }
-  };
 
   // データインポート
   const handleImport = (event) => {
@@ -1273,7 +1265,7 @@ export default function App() {
   const resetData = () => {
     if (window.confirm('全てのデータを初期状態に戻しますか？')) {
         setTasks(initialTasks);
-        setTotalDuration(180);
+        setTotalDuration(210);
     }
   };
 
@@ -1355,44 +1347,44 @@ export default function App() {
       <div className="flex flex-1 flex-col overflow-hidden">
         
         {/* 1. Chart Area (Top, Auto height to fit content) */}
-        <div className="flex-none flex flex-col bg-slate-50/50 relative border-b-4 border-gray-200 shrink-0" 
+        {/* ヘッダーとボディを統合したスクロールコンテナ */}
+        <div ref={chartRef} className={`flex-none flex flex-col bg-slate-50/50 relative border-b-4 border-gray-200 shrink-0 overflow-auto ${isPanning ? 'cursor-grabbing' : (dragState ? 'cursor-grabbing' : 'cursor-grab')}`} 
           style={{ height: `${chartHeightPercent}%`, minHeight: '20%', maxHeight: '60%' }}
           onMouseDown={handleChartMouseDown}>
-        
            
-           {/* Chart Header (Scale) - Scroll synced */}
-           <div ref={headerRef} className="h-8 bg-white border-b border-gray-200 flex shrink-0 select-none overflow-hidden">
-              <div style={{ width: `${currentZoom.scale * 100}%`, minWidth: '100%' }} className="flex h-full relative">
-                  {/* Sticky Task Name Column */}
-                  <div className="w-40 shrink-0 sticky left-0 z-30 bg-white border-r border-gray-200 flex items-center justify-center">
-                     <span className="text-xs font-bold text-gray-400">Member</span>
-                  </div>
-                  
-                  {/* Scale Container */}
-                  <div className="flex-1 relative h-full">
-                     {/* Scale Markers */}
-                     {Array.from({ length: Math.floor(totalDuration / currentZoom.interval) + 1 }).map((_, i) => {
-                        const elapsed = i * currentZoom.interval;
-                        const left = (elapsed / totalDuration) * 100;
-                        const remaining = toRemaining(elapsed, totalDuration);
-                        if (left > 100) return null;
-                        return (
-                            <div key={i} className="absolute top-0 bottom-0 border-l border-gray-200 flex flex-col justify-end pb-1" style={{ left: `${left}%` }}>
-                                <span className="text-[10px] text-gray-400 pl-1 -ml-px tabular-nums">
-                                    {formatTime(remaining)}
-                                </span>
-                            </div>
-                        );
-                     })}
+           {/* Wrapper div for unified width */}
+           <div style={{ width: `${currentZoom.scale * 100}%`, minWidth: '100%' }} className="relative min-h-full flex flex-col">
+              
+              {/* Chart Header (Scale) - Sticky Top */}
+              <div className="h-8 bg-white border-b border-gray-200 flex shrink-0 select-none sticky top-0 z-40">
+                  <div className="flex-1 flex h-full relative">
+                      {/* Sticky Task Name Column */}
+                      <div className="w-40 shrink-0 sticky left-0 z-50 bg-white border-r border-gray-200 flex items-center justify-center">
+                         <span className="text-xs font-bold text-gray-400">Member</span>
+                      </div>
+                      
+                      {/* Scale Container */}
+                      <div className="flex-1 relative h-full">
+                         {/* Scale Markers */}
+                         {Array.from({ length: Math.floor(totalDuration / currentZoom.interval) + 1 }).map((_, i) => {
+                            const elapsed = i * currentZoom.interval;
+                            const left = (elapsed / totalDuration) * 100;
+                            const remaining = toRemaining(elapsed, totalDuration);
+                            if (left > 100) return null;
+                            return (
+                                <div key={i} className="absolute top-0 bottom-0 border-l border-gray-200 flex flex-col justify-end pb-1" style={{ left: `${left}%` }}>
+                                    <span className="text-[10px] text-gray-400 pl-1 -ml-px tabular-nums">
+                                        {formatTime(remaining)}
+                                    </span>
+                                </div>
+                            );
+                         })}
+                      </div>
                   </div>
               </div>
-           </div>
 
-           {/* Chart Body - Scrollable */}
-           <div ref={chartRef} onScroll={handleScroll} className={`overflow-auto relative flex-1 ${isPanning ? 'cursor-grabbing' : (dragState ? 'cursor-grabbing' : 'cursor-grab')}`}
-             style={{ height: 'auto' }}
-           >
-              <div style={{ width: `${currentZoom.scale * 100}%`, minWidth: '100%' }} className="relative min-h-full">
+              {/* Chart Body */}
+              <div className="relative flex-1">
                 <GanttBackground 
                    totalDuration={totalDuration} 
                    overlaps={overlaps} 
